@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Spanish Verbs Trainer</title>
+<style>
+:root{--bg:#fff;--fg:#1a1a1a;--muted:#666;--card:#f1f2f6;--line:#d9dbe3;--accent:#4a6cf7;--good:#13894c;--bad:#d03030;--blue:#2a6fdb;--mag:#a83ba8;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121214;--fg:#eceef3;--muted:#9aa0ad;--card:#1d1f26;--line:#30343f;--accent:#7c93ff;--good:#3ddc84;--bad:#ff6b6b;--blue:#6db3ff;--mag:#ff8cff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121214;--fg:#eceef3;--muted:#9aa0ad;--card:#1d1f26;--line:#30343f;--accent:#7c93ff;--good:#3ddc84;--bad:#ff6b6b;--blue:#6db3ff;--mag:#ff8cff;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{box-sizing:border-box;max-width:480px;min-height:100%;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+#score{text-align:center;color:var(--muted);font-size:18px}
+#prompt{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;font-size:34px;line-height:1.3;background:var(--card);border-radius:16px;padding:24px 12px;min-height:140px}
+#fb{min-height:64px;text-align:center;font-size:16px;line-height:1.4}
+input{box-sizing:border-box;width:100%;font-size:22px;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--fg)}
+input:disabled{opacity:.5}
+.row{display:flex;gap:12px}
+button{flex:1;font-size:18px;padding:14px;border-radius:12px;border:0;background:var(--accent);color:#fff;font-weight:600}
+button.alt{background:var(--card);color:var(--fg);border:1px solid var(--line)}
+button:disabled{opacity:.4}
+.good{color:var(--good)}.bad{color:var(--bad)}.blue{color:var(--blue)}.mag{color:var(--mag)}
+.seg{display:flex;gap:8px}
+.seg button{padding:10px;font-size:16px;background:var(--card);color:var(--fg);border:1px solid var(--line)}
+.seg button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.seg button:disabled.on{opacity:.8}
+.tense{font-size:16px;color:var(--muted)}
+.top{display:flex;align-items:center;gap:8px}
+.top #score{flex:1}
+#snd{flex:none;padding:8px 12px;font-size:18px}
+</style>
+</head>
+<body>
+<main>
+<div class="top"><div id="score"></div><button type="button" class="alt" id="snd" aria-label="Sound on or off">🔊</button></div>
+<div class="seg" id="seg"><button type="button" data-m="present">Present</button><button type="button" data-m="future">Future</button><button type="button" data-m="both">Both</button></div>
+<div id="prompt">Spanish verb trainer</div>
+<div id="fb"></div>
+<form id="f">
+<input id="ans" disabled placeholder="type the conjugation" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go">
+<div class="row" style="margin-top:12px">
+<button type="button" class="alt" id="hint" disabled>Hint</button>
+<button type="button" id="go">Start</button>
+</div>
+</form>
+</main>
+<script>
+const REG={"comer":{"yo":"como","tu":"comes","el":"come","nosotros":"comemos","vosotros":"coméis","ellos":"comen"},"beber":{"yo":"bebo","tu":"bebes","el":"bebe","nosotros":"bebemos","vosotros":"bebéis","ellos":"beben"},"vivir":{"yo":"vivo","tu":"vives","el":"vive","nosotros":"vivimos","vosotros":"vivís","ellos":"viven"},"leer":{"yo":"leo","tu":"lees","el":"lee","nosotros":"leemos","vosotros":"leéis","ellos":"leen"},"abrir":{"yo":"abro","tu":"abres","el":"abre","nosotros":"abrimos","vosotros":"abrís","ellos":"abren"},"cerrar":{"yo":"cierro","tu":"cierras","el":"cierra","nosotros":"cerramos","vosotros":"cerráis","ellos":"cierran"},"trabajar":{"yo":"trabajo","tu":"trabajas","el":"trabaja","nosotros":"trabajamos","vosotros":"trabajáis","ellos":"trabajan"},"estudiar":{"yo":"estudio","tu":"estudias","el":"estudia","nosotros":"estudiamos","vosotros":"estudiáis","ellos":"estudian"},"terminar":{"yo":"termino","tu":"terminas","el":"termina","nosotros":"terminamos","vosotros":"termináis","ellos":"terminan"}};
+const IRR={"ser":{"yo":"soy","tu":"eres","el":"es","nosotros":"somos","vosotros":"sois","ellos":"son"},"estar":{"yo":"estoy","tu":"estás","el":"está","nosotros":"estamos","vosotros":"estáis","ellos":"están"},"ir":{"yo":"voy","tu":"vas","el":"va","nosotros":"vamos","vosotros":"vais","ellos":"van"},"haber":{"yo":"he","tu":"has","el":"ha","nosotros":"hemos","vosotros":"habéis","ellos":"han"},"poder":{"yo":"puedo","tu":"puedes","el":"puede","nosotros":"podemos","vosotros":"podéis","ellos":"pueden"},"querer":{"yo":"quiero","tu":"quieres","el":"quiere","nosotros":"queremos","vosotros":"queréis","ellos":"quieren"},"deber":{"yo":"debo","tu":"debes","el":"debe","nosotros":"debemos","vosotros":"debéis","ellos":"deben"},"dormir":{"yo":"duermo","tu":"duermes","el":"duerme","nosotros":"dormimos","vosotros":"dormís","ellos":"duermen"},"pedir":{"yo":"pido","tu":"pides","el":"pide","nosotros":"pedimos","vosotros":"pedís","ellos":"piden"},"pensar":{"yo":"pienso","tu":"piensas","el":"piensa","nosotros":"pensamos","vosotros":"pensáis","ellos":"piensan"},"encontrar":{"yo":"encuentro","tu":"encuentras","el":"encuentra","nosotros":"encontramos","vosotros":"encontráis","ellos":"encuentran"},"buscar":{"yo":"busco","tu":"buscas","el":"busca","nosotros":"buscamos","vosotros":"buscáis","ellos":"buscan"},"llegar":{"yo":"llego","tu":"llegas","el":"llega","nosotros":"llegamos","vosotros":"llegáis","ellos":"llegan"},"empezar":{"yo":"empiezo","tu":"empiezas","el":"empieza","nosotros":"empezamos","vosotros":"empezáis","ellos":"empiezan"},"volver":{"yo":"vuelvo","tu":"vuelves","el":"vuelve","nosotros":"volvemos","vosotros":"volvéis","ellos":"vuelven"},"recordar":{"yo":"recuerdo","tu":"recuerdas","el":"recuerda","nosotros":"recordamos","vosotros":"recordáis","ellos":"recuerdan"},"preferir":{"yo":"prefiero","tu":"prefieres","el":"prefiere","nosotros":"preferimos","vosotros":"preferís","ellos":"prefieren"},"sentir":{"yo":"siento","tu":"sientes","el":"siente","nosotros":"sentimos","vosotros":"sentís","ellos":"sienten"},"servir":{"yo":"sirvo","tu":"sirves","el":"sirve","nosotros":"servimos","vosotros":"servís","ellos":"sirven"},"morir":{"yo":"muero","tu":"mueres","el":"muere","nosotros":"morimos","vosotros":"morís","ellos":"mueren"},"perder":{"yo":"pierdo","tu":"pierdes","el":"pierde","nosotros":"perdemos","vosotros":"perdéis","ellos":"pierden"},"entender":{"yo":"entiendo","tu":"entiendes","el":"entiende","nosotros":"entendemos","vosotros":"entendéis","ellos":"entienden"},"llamarse":{"yo":"me llamo","tu":"te llamas","el":"se llama","nosotros":"nos llamamos","vosotros":"os llamáis","ellos":"se llaman"},"levantarse":{"yo":"me levanto","tu":"te levantas","el":"se levanta","nosotros":"nos levantamos","vosotros":"os levantáis","ellos":"se levantan"},"sentarse":{"yo":"me siento","tu":"te sientas","el":"se sienta","nosotros":"nos sentamos","vosotros":"os sentáis","ellos":"se sientan"},"acostarse":{"yo":"me acuesto","tu":"te acuestas","el":"se acuesta","nosotros":"nos acostamos","vosotros":"os acostáis","ellos":"se acuestan"},"despertarse":{"yo":"me despierto","tu":"te despiertas","el":"se despierta","nosotros":"nos despertamos","vosotros":"os despertáis","ellos":"se despiertan"},"vestirse":{"yo":"me visto","tu":"te vistes","el":"se viste","nosotros":"nos vestimos","vosotros":"os vestís","ellos":"se visten"},"ducharse":{"yo":"me ducho","tu":"te duchas","el":"se ducha","nosotros":"nos duchamos","vosotros":"os ducháis","ellos":"se duchan"}};
+const PERSONS=["yo","tu","el","nosotros","vosotros","ellos"];
+const ENDINGS={
+ar:["1st group (-AR)",{yo:"o",tu:"as",el:"a",nosotros:"amos",vosotros:"áis",ellos:"an"}],
+er:["2nd group (-ER)",{yo:"o",tu:"es",el:"e",nosotros:"emos",vosotros:"éis",ellos:"en"}],
+ir:["3rd group (-IR)",{yo:"o",tu:"es",el:"e",nosotros:"imos",vosotros:"ís",ellos:"en"}]};
+const FUT_END={yo:"é",tu:"ás",el:"á",nosotros:"emos",vosotros:"éis",ellos:"án"};
+const FUT_STEM={haber:"habr",poder:"podr",querer:"querr"};
+const REFL={yo:"me",tu:"te",el:"se",nosotros:"nos",vosotros:"os",ellos:"se"};
+function future(verb,per){
+  const refl=verb.endsWith("se"),inf=refl?verb.slice(0,-2):verb;
+  return (refl?REFL[per]+" ":"")+(FUT_STEM[inf]||inf)+FUT_END[per];
+}
+const $=id=>document.getElementById(id);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const MODES=["present","future","both"];
+const KEYS={present:"trainer_hsc",future:"trainer_hsc_future",both:"trainer_hsc_both"};
+let mode="present",hsc=0,score=0,playing=false,hinted=false,cur={};
+let weights={},soundOn=true,ac=null;
+try{weights=JSON.parse(localStorage.getItem("trainer_weights"))||{};soundOn=localStorage.getItem("trainer_sound")!=="0"}catch(e){}
+const ALLV=Object.keys(REG).concat(Object.keys(IRR));
+function pickVerb(){
+  const pool=ALLV.filter(v=>v!==cur.verb),w=pool.map(v=>weights[v]||1);
+  let r=Math.random()*w.reduce((a,b)=>a+b,0);
+  for(let i=0;i<pool.length;i++){r-=w[i];if(r<=0)return pool[i]}
+  return pool[pool.length-1];
+}
+function adjust(v,ok){
+  const w=weights[v]||1;weights[v]=ok?Math.max(0.25,w*0.8):Math.min(8,w*2);
+  try{localStorage.setItem("trainer_weights",JSON.stringify(weights))}catch(e){}
+}
+function sound(ok){
+  if(!soundOn)return;
+  try{
+    ac=ac||new(window.AudioContext||window.webkitAudioContext)();
+    if(ac.state==="suspended")ac.resume();
+    const t=ac.currentTime;
+    (ok?[[660,0],[880,0.1]]:[[220,0],[160,0.16]]).forEach(([f,dt])=>{
+      const o=ac.createOscillator(),g=ac.createGain(),len=ok?0.2:0.32;
+      o.type=ok?"sine":"sawtooth";o.frequency.value=f;
+      g.gain.setValueAtTime(0.0001,t+dt);
+      g.gain.exponentialRampToValueAtTime(ok?0.3:0.18,t+dt+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+dt+len);
+      o.connect(g);g.connect(ac.destination);o.start(t+dt);o.stop(t+dt+len+0.05);
+    });
+  }catch(e){}
+}
+function renderSound(){$("snd").textContent=soundOn?"🔊":"🔇"}
+function loadHsc(k){try{return parseInt(localStorage.getItem(k))||0}catch(e){return 0}}
+try{const m=localStorage.getItem("trainer_mode");if(MODES.includes(m))mode=m}catch(e){}
+hsc=loadHsc(KEYS[mode]);
+function saveHsc(){try{localStorage.setItem(KEYS[mode],String(hsc))}catch(e){}}
+function renderScore(){$("score").innerHTML='score: <b class="good">'+score+'</b> · high score: <b class="good">'+hsc+'</b>'}
+function renderMode(){
+  document.querySelectorAll("#seg button").forEach(b=>{
+    const on=b.dataset.m===mode;b.classList.toggle("on",on);b.setAttribute("aria-pressed",on);b.disabled=playing;
+  });
+}
+function setMode(m){
+  if(playing)return;
+  mode=m;try{localStorage.setItem("trainer_mode",m)}catch(e){}
+  hsc=loadHsc(KEYS[m]);score=0;renderMode();renderScore();
+}
+function setFb(t,c){$("fb").className=c||"";$("fb").textContent=t}
+function next(){
+  const tense=mode==="both"?pick(["present","future"]):mode;
+  const verb=pickVerb(),type=REG[verb]?"reg":"irr",d=type==="reg"?REG:IRR,per=pick(PERSONS);
+  cur={type,verb,per,tense,ans:tense==="present"?d[verb][per]:future(verb,per)};hinted=false;
+  $("prompt").innerHTML='<span><span class="mag">'+per+'</span><br>('+verb+')<br><span class="tense">'+tense+'</span></span>';
+  $("ans").value="";$("ans").focus();
+}
+function start(){
+  playing=true;score=0;setFb("");renderMode();renderScore();
+  $("ans").disabled=false;$("hint").disabled=false;$("go").textContent="Check";next();
+}
+function hint(){
+  if(!playing)return;hinted=true;let t;const v=cur.verb,refl=v.endsWith("se");
+  if(cur.tense==="future"){
+    const e="the future ending for "+cur.per+": -"+FUT_END[cur.per];
+    if(refl)t="Reflexive verb: don’t forget the pronoun (me, te, se, nos, os, se). Then add "+e;
+    else if(FUT_STEM[v])t="This verb has an irregular future stem. Then add "+e;
+    else t="Keep the whole infinitive and add "+e;
+  }else if(refl)t="Reflexive verb: don’t forget the pronoun (me, te, se, nos, os, se).";
+  else if(cur.type==="irr")t="This is an irregular verb.";
+  else{const s=v.slice(-2),g=ENDINGS[s];t="This is a "+g[0]+" verb. Remove -"+s+" and add the ending for "+cur.per+": -"+g[1][cur.per]}
+  setFb(t,"mag");$("ans").focus();
+}
+function check(){
+  const g=$("ans").value.trim().toLowerCase();if(!g)return;
+  if(g===cur.ans){
+    if(!hinted){score++;adjust(cur.verb,true)}sound(true);setFb("correcto","blue");renderScore();next();
+  }else{
+    adjust(cur.verb,false);sound(false);
+    playing=false;if(score>hsc){hsc=score;saveHsc()}renderMode();renderScore();
+    $("prompt").innerHTML='<span><span class="bad" style="font-size:24px">incorrecto</span><br><span style="font-size:18px;color:var(--muted)">the answer is</span><br><span class="blue">'+cur.ans+'</span></span>';
+    setFb("your score: "+score+" / high score: "+hsc);
+    $("ans").disabled=true;$("ans").value="";$("hint").disabled=true;$("go").textContent="Play again";
+  }
+}
+const act=()=>{playing?check():start()};
+$("f").addEventListener("submit",e=>e.preventDefault());
+$("go").addEventListener("click",act);
+$("ans").addEventListener("keydown",e=>{if(e.key==="Enter"||e.keyCode===13){e.preventDefault();act()}});
+$("hint").addEventListener("click",hint);
+document.querySelectorAll("#seg button").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.m)));
+$("snd").addEventListener("click",()=>{soundOn=!soundOn;try{localStorage.setItem("trainer_sound",soundOn?"1":"0")}catch(e){}renderSound();sound(true)});
+renderSound();
+renderMode();renderScore();
+</script>
+</body>
+</html>
